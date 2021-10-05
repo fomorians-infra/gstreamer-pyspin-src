@@ -1,7 +1,7 @@
 import enum
-from dataclasses import dataclass
 import math
-from typing import Any, List, Callable
+from dataclasses import dataclass
+from typing import Any, Callable, List
 
 import gi
 
@@ -10,9 +10,9 @@ gi.require_version("GstBase", "1.0")
 gi.require_version("GObject", "2.0")
 gi.require_version("GstVideo", "1.0")
 
-from gi.repository import Gst, GObject, GLib, GstBase, GstVideo
+from gi.repository import GLib, GObject, Gst, GstBase, GstVideo  # isort:skip
+from gstreamer.gst_hacks import map_gst_buffer  # isort:skip
 
-from gstreamer.gst_hacks import map_gst_buffer
 
 try:
     import numpy as np
@@ -67,19 +67,13 @@ class ImageAcquirer:
         if device_serial is not None:
             candidate_devices.append(self._device_list.GetBySerial(device_serial))
 
-        if device_index is not None and device_index < self.get_device_count(
-            update_list=False
-        ):
+        if device_index is not None and device_index < self.get_device_count(update_list=False):
             candidate_devices.append(self._device_list.GetByIndex(device_index))
 
-        self._current_device = next(
-            (dev for dev in candidate_devices if dev and dev.IsValid()), None
-        )
+        self._current_device = next((dev for dev in candidate_devices if dev and dev.IsValid()), None)
 
         if self._current_device is None:
-            raise ValueError(
-                f"No device with serial number '{device_serial}' or index '{device_index}' is available"
-            )
+            raise ValueError(f"No device with serial number '{device_serial}' or index '{device_index}' is available")
 
         self._current_device.Init()
 
@@ -134,9 +128,7 @@ class ImageAcquirer:
 
             if spinnaker_image.IsIncomplete():
                 if logger:
-                    logger(
-                        f"Image incomplete with image status {spinnaker_image.GetImageStatus()}"
-                    )
+                    logger(f"Image incomplete with image status {spinnaker_image.GetImageStatus()}")
                 spinnaker_image.Release()
 
         image_array = spinnaker_image.GetData()
@@ -217,9 +209,7 @@ class ImageAcquirer:
         elif node.GetPrincipalInterfaceType() == PySpin.intfICommand:
             raise NotImplementedError("No getter implemented for command nodes")
         else:
-            raise ValueError(
-                f"{node_name} node is of unknown type: {node.GetPrincipalInterfaceType()}"
-            )
+            raise ValueError(f"{node_name} node is of unknown type: {node.GetPrincipalInterfaceType()}")
 
     def set_node_val(self, node_name: str, value: Any):
         node: PySpin.INode = self._get_node(node_name)
@@ -240,9 +230,7 @@ class ImageAcquirer:
         elif node.GetPrincipalInterfaceType() == PySpin.intfICommand:
             raise NotImplementedError("No setter implemented for command nodes")
         else:
-            raise ValueError(
-                f"{node_name} node is of unknown type: {node.GetPrincipalInterfaceType()}"
-            )
+            raise ValueError(f"{node_name} node is of unknown type: {node.GetPrincipalInterfaceType()}")
 
     def execute_node(self, node_name: str):
         node: PySpin.INode = self._get_node(node_name)
@@ -253,9 +241,7 @@ class ImageAcquirer:
         elif node.GetPrincipalInterfaceType() == PySpin.intfICommand:
             self._execute_command_node(node_name)
         else:
-            raise ValueError(
-                f"Cannot execute {node_name} node of type: {node.GetPrincipalInterfaceType()}"
-            )
+            raise ValueError(f"Cannot execute {node_name} node of type: {node.GetPrincipalInterfaceType()}")
 
     def get_node_range(self, node_name: str) -> (Any, Any):
         node: PySpin.INode = self._get_node(node_name)
@@ -268,9 +254,7 @@ class ImageAcquirer:
         elif node.GetPrincipalInterfaceType() == PySpin.intfIFloat:
             return self._get_float_node_range(PySpin.CFloatPtr(node))
         else:
-            raise ValueError(
-                f"Range not available for {node_name} node of type: {node.GetPrincipalInterfaceType()}"
-            )
+            raise ValueError(f"Range not available for {node_name} node of type: {node.GetPrincipalInterfaceType()}")
 
     def get_node_entries(self, node_name: str) -> List[Any]:
         node: PySpin.INode = self._get_node(node_name)
@@ -281,63 +265,45 @@ class ImageAcquirer:
         elif node.GetPrincipalInterfaceType() == PySpin.intfIEnumeration:
             return self._get_available_enum_entries(PySpin.CEnumerationPtr(node))
         else:
-            raise ValueError(
-                f"Range not available for {node_name} node of type: {node.GetPrincipalInterfaceType()}"
-            )
+            raise ValueError(f"Range not available for {node_name} node of type: {node.GetPrincipalInterfaceType()}")
 
     def _get_int_node_val(self, int_node: PySpin.CIntegerPtr) -> int:
         if not PySpin.IsAvailable(int_node) or not PySpin.IsReadable(int_node):
-            raise ValueError(
-                f"Integer node '{int_node.GetDisplayName()}' is not readable"
-            )
+            raise ValueError(f"Integer node '{int_node.GetDisplayName()}' is not readable")
         return int_node.GetValue(IgnoreCache=True)
 
     def _get_int_node_range(self, int_node: PySpin.CIntegerPtr) -> (int, int):
         if not PySpin.IsAvailable(int_node) or not PySpin.IsReadable(int_node):
-            raise ValueError(
-                f"Integer node '{int_node.GetDisplayName()}' is not writable"
-            )
+            raise ValueError(f"Integer node '{int_node.GetDisplayName()}' is not writable")
         return (int_node.GetMin(), int_node.GetMax())
 
     def _set_int_node_val(self, int_node: PySpin.CIntegerPtr, value: int):
         if not PySpin.IsAvailable(int_node) or not PySpin.IsWritable(int_node):
-            raise ValueError(
-                f"Integer node '{int_node.GetDisplayName()}' is not writable"
-            )
+            raise ValueError(f"Integer node '{int_node.GetDisplayName()}' is not writable")
 
         min_val, max_val = self._get_int_node_range(int_node)
         if value < min_val:
-            Gst.warning(
-                f"{int_node.GetDisplayName()}: {value} is out of range [{min_val}, {max_val}], using {min_val}"
-            )
+            Gst.warning(f"{int_node.GetDisplayName()}: {value} is out of range [{min_val}, {max_val}], using {min_val}")
             value = min_val
         if value > max_val:
-            Gst.warning(
-                f"{int_node.GetDisplayName()}: {value} is out of range [{min_val}, {max_val}], using {max_val}"
-            )
+            Gst.warning(f"{int_node.GetDisplayName()}: {value} is out of range [{min_val}, {max_val}], using {max_val}")
             value = max_val
 
         int_node.SetValue(int(value))
 
     def _get_float_node_val(self, float_node: PySpin.CFloatPtr) -> float:
         if not PySpin.IsAvailable(float_node) or not PySpin.IsReadable(float_node):
-            raise ValueError(
-                f"Float node '{float_node.GetDisplayName()}' is not readable"
-            )
+            raise ValueError(f"Float node '{float_node.GetDisplayName()}' is not readable")
         return float_node.GetValue(IgnoreCache=True)
 
     def _get_float_node_range(self, float_node: PySpin.CFloatPtr) -> (float, float):
         if not PySpin.IsAvailable(float_node) or not PySpin.IsReadable(float_node):
-            raise ValueError(
-                f"Float node '{float_node.GetDisplayName()}' is not readable"
-            )
+            raise ValueError(f"Float node '{float_node.GetDisplayName()}' is not readable")
         return (float_node.GetMin(), float_node.GetMax())
 
     def _set_float_node_val(self, float_node: PySpin.CFloatPtr, value: float):
         if not PySpin.IsAvailable(float_node) or not PySpin.IsWritable(float_node):
-            raise ValueError(
-                f"Float node '{float_node.GetDisplayName()}' is not writable"
-            )
+            raise ValueError(f"Float node '{float_node.GetDisplayName()}' is not writable")
 
         min_val, max_val = self._get_float_node_range(float_node)
         if value < min_val:
@@ -355,67 +321,47 @@ class ImageAcquirer:
 
     def _get_bool_node_val(self, bool_node: PySpin.CBooleanPtr) -> bool:
         if not PySpin.IsAvailable(bool_node) or not PySpin.IsReadable(bool_node):
-            raise ValueError(
-                f"Boolean node '{bool_node.GetDisplayName()}' is not readable"
-            )
+            raise ValueError(f"Boolean node '{bool_node.GetDisplayName()}' is not readable")
         return bool_node.GetValue(IgnoreCache=True)
 
     def _set_bool_node_val(self, bool_node: PySpin.CBooleanPtr, value: bool):
         if not PySpin.IsAvailable(bool_node) or not PySpin.IsWritable(bool_node):
-            raise ValueError(
-                f"Boolean node '{bool_node.GetDisplayName()}' is not writable"
-            )
+            raise ValueError(f"Boolean node '{bool_node.GetDisplayName()}' is not writable")
 
         bool_node.SetValue(bool(value))
 
-    def _get_available_enum_entries(
-        self, enum_node: PySpin.CEnumerationPtr
-    ) -> List[str]:
+    def _get_available_enum_entries(self, enum_node: PySpin.CEnumerationPtr) -> List[str]:
         if not PySpin.IsAvailable(enum_node) or not PySpin.IsReadable(enum_node):
-            raise ValueError(
-                f"Enumeration node '{enum_node.GetDisplayName()}' is not readable"
-            )
+            raise ValueError(f"Enumeration node '{enum_node.GetDisplayName()}' is not readable")
 
         available_entries = [
-            PySpin.CEnumEntryPtr(pf).GetSymbolic()
-            for pf in enum_node.GetEntries()
-            if PySpin.IsAvailable(pf)
+            PySpin.CEnumEntryPtr(pf).GetSymbolic() for pf in enum_node.GetEntries() if PySpin.IsAvailable(pf)
         ]
         return available_entries
 
     def _get_enum_node_val(self, enum_node: PySpin.CEnumerationPtr) -> str:
         if not PySpin.IsAvailable(enum_node) or not PySpin.IsReadable(enum_node):
-            raise ValueError(
-                f"Enumeration node '{enum_node.GetDisplayName()}' is not readable"
-            )
+            raise ValueError(f"Enumeration node '{enum_node.GetDisplayName()}' is not readable")
         return enum_node.GetCurrentEntry(IgnoreCache=True).GetSymbolic()
 
     def _set_enum_node_val(self, enum_node: PySpin.CEnumerationPtr, value: str):
         if not PySpin.IsAvailable(enum_node) or not PySpin.IsWritable(enum_node):
-            raise ValueError(
-                f"Enumeration node '{enum_node.GetDisplayName()}' is not writable"
-            )
+            raise ValueError(f"Enumeration node '{enum_node.GetDisplayName()}' is not writable")
 
         enum_entry = enum_node.GetEntryByName(str(value))
         if not PySpin.IsAvailable(enum_entry) or not PySpin.IsReadable(enum_entry):
-            raise ValueError(
-                f"Entry '{value}' for enumeration node '{enum_node.GetDisplayName()}' is not available"
-            )
+            raise ValueError(f"Entry '{value}' for enumeration node '{enum_node.GetDisplayName()}' is not available")
 
         enum_node.SetIntValue(enum_entry.GetValue())
 
     def _get_string_node_val(self, string_node: PySpin.CStringPtr) -> str:
         if not PySpin.IsAvailable(string_node) or not PySpin.IsReadable(string_node):
-            raise ValueError(
-                f"String node '{string_node.GetDisplayName()}' is not readable"
-            )
+            raise ValueError(f"String node '{string_node.GetDisplayName()}' is not readable")
         return string_node.GetValue(IgnoreCache=True)
 
     def _set_string_node_val(self, string_node: PySpin.CStringPtr, value: str):
         if not PySpin.IsAvailable(string_node) or not PySpin.IsWritable(string_node):
-            raise ValueError(
-                f"String node '{string_node.GetDisplayName()}' is not writable"
-            )
+            raise ValueError(f"String node '{string_node.GetDisplayName()}' is not writable")
         string_node.SetValue(str(value))
 
     def _execute_command_node(self, node_name: str):
@@ -697,15 +643,11 @@ class PySpinSrc(GstBase.PushSrc):
         if prop.name == "auto-exposure":
             self.auto_exposure = value
             if self.image_acquirer is not None and self.image_acquirer.is_initialized():
-                self.set_cam_node_val(
-                    "ExposureAuto", "Continuous" if self.auto_exposure else "Off"
-                )
+                self.set_cam_node_val("ExposureAuto", "Continuous" if self.auto_exposure else "Off")
         elif prop.name == "auto-gain":
             self.auto_gain = value
             if self.image_acquirer is not None and self.image_acquirer.is_initialized():
-                self.set_cam_node_val(
-                    "GainAuto", "Continuous" if self.auto_gain else "Off"
-                )
+                self.set_cam_node_val("GainAuto", "Continuous" if self.auto_gain else "Off")
         elif prop.name == "exposure":
             self.exposure_time = value
             if self.image_acquirer is not None and self.image_acquirer.is_initialized():
@@ -744,22 +686,14 @@ class PySpinSrc(GstBase.PushSrc):
     # helper function
     def get_format_from_genicam(self, genicam_format: str) -> "PixelFormatType":
         return next(
-            (
-                f
-                for f in self.SUPPORTED_PIXEL_FORMATS
-                if f.genicam.lower() == genicam_format.lower()
-            ),
+            (f for f in self.SUPPORTED_PIXEL_FORMATS if f.genicam.lower() == genicam_format.lower()),
             None,
         )
 
     # helper function
     def get_format_from_gst(self, gst_format: str) -> "PixelFormatType":
         return next(
-            (
-                f
-                for f in self.SUPPORTED_PIXEL_FORMATS
-                if f.gst.lower() == gst_format.lower()
-            ),
+            (f for f in self.SUPPORTED_PIXEL_FORMATS if f.gst.lower() == gst_format.lower()),
             None,
         )
 
@@ -884,13 +818,9 @@ class PySpinSrc(GstBase.PushSrc):
 
         genicam_formats = self.get_cam_node_entries("PixelFormat")
 
-        supported_pixel_formats = [
-            self.get_format_from_genicam(pf) for pf in genicam_formats
-        ]
+        supported_pixel_formats = [self.get_format_from_genicam(pf) for pf in genicam_formats]
 
-        supported_pixel_formats = [
-            pf for pf in supported_pixel_formats if pf is not None
-        ]
+        supported_pixel_formats = [pf for pf in supported_pixel_formats if pf is not None]
 
         camera_caps = Gst.Caps.new_empty()
 
@@ -911,9 +841,7 @@ class PySpinSrc(GstBase.PushSrc):
         Gst.info("Setting caps")
 
         self.info.from_caps(caps)
-        self.set_blocksize(
-            self.info.size if self.info.size > 0 else self.info.width * self.info.height
-        )
+        self.set_blocksize(self.info.size if self.info.size > 0 else self.info.width * self.info.height)
 
         Gst.info(f"Blocksize: {self.get_blocksize()} bytes")
 
@@ -949,13 +877,12 @@ class PySpinSrc(GstBase.PushSrc):
         Gst.info(f"Incoming caps: {structure}")
 
         genicam_format = self.get_cam_node_val("PixelFormat")
-        structure.fixate_field_string(
-            "format", self.get_format_from_genicam(genicam_format).gst
-        )
-        self.set_cam_node_val(
-            "PixelFormat",
-            self.get_format_from_gst(structure.get_value("format")).genicam,
-        )
+        genicam_pixel_format_type = self.get_format_from_genicam(genicam_format)
+        if genicam_pixel_format_type is not None:
+            structure.fixate_field_string("format", genicam_pixel_format_type.gst)
+
+        gst_pixel_format_type = self.get_format_from_gst(structure.get_value("format"))
+        self.set_cam_node_val("PixelFormat", gst_pixel_format_type.genicam)
 
         height = self.get_cam_node_val("Height")
         structure.fixate_field_nearest_int("height", height)
@@ -964,8 +891,7 @@ class PySpinSrc(GstBase.PushSrc):
         if self.center_y:
             self.set_cam_node_val(
                 "OffsetY",
-                (self.get_cam_node_range("Height")[1] - self.get_cam_node_val("Height"))
-                // 2,
+                (self.get_cam_node_range("Height")[1] - self.get_cam_node_val("Height")) // 2,
             )
         else:
             self.set_cam_node_val("OffsetY", self.offset_y)
@@ -977,8 +903,7 @@ class PySpinSrc(GstBase.PushSrc):
         if self.center_x:
             self.set_cam_node_val(
                 "OffsetX",
-                (self.get_cam_node_range("Width")[1] - self.get_cam_node_val("Width"))
-                // 2,
+                (self.get_cam_node_range("Width")[1] - self.get_cam_node_val("Width")) // 2,
             )
         else:
             self.set_cam_node_val("OffsetX", self.offset_x)
@@ -991,9 +916,7 @@ class PySpinSrc(GstBase.PushSrc):
 
         frame_rate = self.get_cam_node_val("AcquisitionFrameRate")
         structure.fixate_field_nearest_fraction("framerate", frame_rate, 1)
-        self.set_cam_node_val(
-            "AcquisitionFrameRate", float(structure.get_value("framerate")), True
-        )
+        self.set_cam_node_val("AcquisitionFrameRate", float(structure.get_value("framerate")), True)
 
         Gst.info(f"Fixated caps: {structure}")
 
@@ -1013,16 +936,12 @@ class PySpinSrc(GstBase.PushSrc):
                 device_index=(0 if self.serial is None else None),
             ):
                 error_string = "Camera not found"
-                self.post_message(
-                    Gst.Message.new_error(self, GLib.Error(error_string), error_string)
-                )
+                self.post_message(Gst.Message.new_error(self, GLib.Error(error_string), error_string))
                 return False
 
             if not self.apply_properties_to_cam():
                 error_string = "Camera settings could not be applied"
-                self.post_message(
-                    Gst.Message.new_error(self, GLib.Error(error_string), error_string)
-                )
+                self.post_message(Gst.Message.new_error(self, GLib.Error(error_string), error_string))
                 return False
 
             self.camera_caps = self.get_camera_caps()
@@ -1071,9 +990,7 @@ class PySpinSrc(GstBase.PushSrc):
             ) = self.image_acquirer.get_next_image(logger=Gst.warning)
 
             with map_gst_buffer(buffer, Gst.MapFlags.READ) as mapped:
-                mapped_array = np.ndarray(
-                    image_array.shape, buffer=mapped, dtype=image_array.dtype
-                )
+                mapped_array = np.ndarray(image_array.shape, buffer=mapped, dtype=image_array.dtype)
                 mapped_array[:] = image_array
 
             if self.timestamp_offset == 0:
