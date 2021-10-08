@@ -582,8 +582,8 @@ class PySpinSrc(GstBase.PushSrc):
         self.v_binning: int = self.DEFAULT_V_BINNING
         self.offset_x: int = self.DEFAULT_OFFSET_X
         self.offset_y: int = self.DEFAULT_OFFSET_Y
-        self.center_x: int = self.DEFAULT_CENTER_X
-        self.center_y: int = self.DEFAULT_CENTER_Y
+        self.center_x: bool = self.DEFAULT_CENTER_X
+        self.center_y: bool = self.DEFAULT_CENTER_Y
         self.num_cam_buffers: int = self.DEFAULT_NUM_BUFFERS
         self.serial: str = self.DEFAULT_SERIAL_NUMBER
         self.user_set: str = self.DEFAULT_USER_SET
