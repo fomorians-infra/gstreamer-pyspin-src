@@ -1,7 +1,7 @@
 import enum
 import math
 from dataclasses import dataclass
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional, Tuple
 
 import gi
 
@@ -118,7 +118,7 @@ class ImageAcquirer:
         except PySpin.SpinnakerException as ex:
             raise ValueError(f"Error: {ex}")
 
-    def get_next_image(self, logger: Callable[[str], None] = None) -> (np.ndarray, int):
+    def get_next_image(self, logger: Callable[[str], None] = None) -> Tuple[np.ndarray, int, int]:
 
         spinnaker_image = None
 
@@ -166,7 +166,7 @@ class ImageAcquirer:
             self._tl_stream_node_map = self._current_device.GetTLStreamNodeMap()
         return self._tl_stream_node_map
 
-    def _get_device_id(self) -> str:
+    def _get_device_id(self) -> Optional[str]:
         if self._current_device is None or not self._current_device.IsValid():
             return None
         return self._current_device.TLDevice.DeviceSerialNumber.GetValue()
@@ -243,7 +243,7 @@ class ImageAcquirer:
         else:
             raise ValueError(f"Cannot execute {node_name} node of type: {node.GetPrincipalInterfaceType()}")
 
-    def get_node_range(self, node_name: str) -> (Any, Any):
+    def get_node_range(self, node_name: str) -> Tuple[Any, Any]:
         node: PySpin.INode = self._get_node(node_name)
         if node is None:
             raise ValueError(f"{node_name} node is not available")
@@ -272,7 +272,7 @@ class ImageAcquirer:
             raise ValueError(f"Integer node '{int_node.GetDisplayName()}' is not readable")
         return int_node.GetValue(IgnoreCache=True)
 
-    def _get_int_node_range(self, int_node: PySpin.CIntegerPtr) -> (int, int):
+    def _get_int_node_range(self, int_node: PySpin.CIntegerPtr) -> Tuple[int, int]:
         if not PySpin.IsAvailable(int_node) or not PySpin.IsReadable(int_node):
             raise ValueError(f"Integer node '{int_node.GetDisplayName()}' is not writable")
         return (int_node.GetMin(), int_node.GetMax())
@@ -296,7 +296,7 @@ class ImageAcquirer:
             raise ValueError(f"Float node '{float_node.GetDisplayName()}' is not readable")
         return float_node.GetValue(IgnoreCache=True)
 
-    def _get_float_node_range(self, float_node: PySpin.CFloatPtr) -> (float, float):
+    def _get_float_node_range(self, float_node: PySpin.CFloatPtr) -> Tuple[float, float]:
         if not PySpin.IsAvailable(float_node) or not PySpin.IsReadable(float_node):
             raise ValueError(f"Float node '{float_node.GetDisplayName()}' is not readable")
         return (float_node.GetMin(), float_node.GetMax())
@@ -377,21 +377,21 @@ class PySpinSrc(GstBase.PushSrc):
     GST_PLUGIN_NAME = "pyspinsrc"
 
     DEFAULT_AUTO_EXPOSURE = True
-    DEFAULT_AUTO_GAIN = True
+    # DEFAULT_AUTO_GAIN = True
     DEFAULT_EXPOSURE_TIME = -1
-    DEFAULT_GAIN = -1
-    DEFAULT_AUTO_WB = True
-    DEFAULT_WB_BLUE = -1
-    DEFAULT_WB_RED = -1
-    DEFAULT_H_BINNING = 1
-    DEFAULT_V_BINNING = 1
+    # DEFAULT_GAIN = -1
+    # DEFAULT_AUTO_WB = True
+    # DEFAULT_WB_BLUE = -1
+    # DEFAULT_WB_RED = -1
+    # DEFAULT_H_BINNING = 1
+    # DEFAULT_V_BINNING = 1
     DEFAULT_OFFSET_X = 0
     DEFAULT_OFFSET_Y = 0
     DEFAULT_CENTER_X = True
     DEFAULT_CENTER_Y = True
     DEFAULT_NUM_BUFFERS = 10
     DEFAULT_SERIAL_NUMBER = None
-    DEFAULT_USER_SET = "Default"
+    # DEFAULT_USER_SET = "Default"
 
     MILLISECONDS_PER_NANOSECOND = 1000000
 
@@ -412,13 +412,13 @@ class PySpinSrc(GstBase.PushSrc):
             DEFAULT_AUTO_EXPOSURE,
             GObject.ParamFlags.READWRITE,
         ),
-        "auto-gain": (
-            bool,
-            "automatic gain",
-            "Enable the automatic gain algorithm",
-            DEFAULT_AUTO_GAIN,
-            GObject.ParamFlags.READWRITE,
-        ),
+        # "auto-gain": (
+        #     bool,
+        #     "automatic gain",
+        #     "Enable the automatic gain algorithm",
+        #     DEFAULT_AUTO_GAIN,
+        #     GObject.ParamFlags.READWRITE,
+        # ),
         "exposure": (
             float,
             "exposure time",
@@ -428,58 +428,58 @@ class PySpinSrc(GstBase.PushSrc):
             DEFAULT_EXPOSURE_TIME,
             GObject.ParamFlags.READWRITE,
         ),
-        "gain": (
-            float,
-            "gain",
-            "Gain in decibels",
-            -1,
-            100.0,
-            DEFAULT_GAIN,
-            GObject.ParamFlags.READWRITE,
-        ),
-        "auto-wb": (
-            bool,
-            "automatic white balance",
-            "Enable the automatic white balance algorithm",
-            DEFAULT_AUTO_WB,
-            GObject.ParamFlags.READWRITE,
-        ),
-        "wb-blue-ratio": (
-            float,
-            "White balance blue ratio",
-            "White balance blue/green ratio (If neither wb-blue or wb-red are specified, auto wb is used)",
-            -1,
-            10.0,
-            DEFAULT_WB_BLUE,
-            GObject.ParamFlags.READWRITE,
-        ),
-        "wb-red-ratio": (
-            float,
-            "White balance red ratio",
-            "White balance red/green ratio (If neither wb-blue or wb-red are specified, auto wb is used)",
-            -1,
-            10.0,
-            DEFAULT_WB_BLUE,
-            GObject.ParamFlags.READWRITE,
-        ),
-        "h-binning": (
-            int,
-            "horizontal binning",
-            "Horizontal average binning (applied before width and offset x)",
-            1,
-            GLib.MAXINT,
-            DEFAULT_H_BINNING,
-            GObject.ParamFlags.READWRITE,
-        ),
-        "v-binning": (
-            int,
-            "vertical binning",
-            "Vertical average binning (applied before height and offset y)",
-            1,
-            GLib.MAXINT,
-            DEFAULT_V_BINNING,
-            GObject.ParamFlags.READWRITE,
-        ),
+        # "gain": (
+        #     float,
+        #     "gain",
+        #     "Gain in decibels",
+        #     -1,
+        #     100.0,
+        #     DEFAULT_GAIN,
+        #     GObject.ParamFlags.READWRITE,
+        # ),
+        # "auto-wb": (
+        #     bool,
+        #     "automatic white balance",
+        #     "Enable the automatic white balance algorithm",
+        #     DEFAULT_AUTO_WB,
+        #     GObject.ParamFlags.READWRITE,
+        # ),
+        # "wb-blue-ratio": (
+        #     float,
+        #     "White balance blue ratio",
+        #     "White balance blue/green ratio (If neither wb-blue or wb-red are specified, auto wb is used)",
+        #     -1,
+        #     10.0,
+        #     DEFAULT_WB_BLUE,
+        #     GObject.ParamFlags.READWRITE,
+        # ),
+        # "wb-red-ratio": (
+        #     float,
+        #     "White balance red ratio",
+        #     "White balance red/green ratio (If neither wb-blue or wb-red are specified, auto wb is used)",
+        #     -1,
+        #     10.0,
+        #     DEFAULT_WB_BLUE,
+        #     GObject.ParamFlags.READWRITE,
+        # ),
+        # "h-binning": (
+        #     int,
+        #     "horizontal binning",
+        #     "Horizontal average binning (applied before width and offset x)",
+        #     1,
+        #     GLib.MAXINT,
+        #     DEFAULT_H_BINNING,
+        #     GObject.ParamFlags.READWRITE,
+        # ),
+        # "v-binning": (
+        #     int,
+        #     "vertical binning",
+        #     "Vertical average binning (applied before height and offset y)",
+        #     1,
+        #     GLib.MAXINT,
+        #     DEFAULT_V_BINNING,
+        #     GObject.ParamFlags.READWRITE,
+        # ),
         "offset-x": (
             int,
             "offset x",
@@ -528,13 +528,13 @@ class PySpinSrc(GstBase.PushSrc):
             DEFAULT_SERIAL_NUMBER,
             GObject.ParamFlags.READWRITE,
         ),
-        "user-set": (
-            str,
-            "user set",
-            "User set to apply properties on top of",
-            DEFAULT_USER_SET,
-            GObject.ParamFlags.READWRITE,
-        ),
+        # "user-set": (
+        #     str,
+        #     "user set",
+        #     "User set to apply properties on top of",
+        #     DEFAULT_USER_SET,
+        #     GObject.ParamFlags.READWRITE,
+        # ),
     }
 
     @dataclass
@@ -572,27 +572,27 @@ class PySpinSrc(GstBase.PushSrc):
 
         # Properties
         self.auto_exposure: bool = self.DEFAULT_AUTO_EXPOSURE
-        self.auto_gain: bool = self.DEFAULT_AUTO_GAIN
+        # self.auto_gain: bool = self.DEFAULT_AUTO_GAIN
         self.exposure_time: float = self.DEFAULT_EXPOSURE_TIME
-        self.gain: float = self.DEFAULT_GAIN
-        self.auto_wb: bool = self.DEFAULT_AUTO_WB
-        self.wb_blue: float = self.DEFAULT_WB_BLUE
-        self.wb_red: float = self.DEFAULT_WB_RED
-        self.h_binning: int = self.DEFAULT_H_BINNING
-        self.v_binning: int = self.DEFAULT_V_BINNING
+        # self.gain: float = self.DEFAULT_GAIN
+        # self.auto_wb: bool = self.DEFAULT_AUTO_WB
+        # self.wb_blue: float = self.DEFAULT_WB_BLUE
+        # self.wb_red: float = self.DEFAULT_WB_RED
+        # self.h_binning: int = self.DEFAULT_H_BINNING
+        # self.v_binning: int = self.DEFAULT_V_BINNING
         self.offset_x: int = self.DEFAULT_OFFSET_X
         self.offset_y: int = self.DEFAULT_OFFSET_Y
         self.center_x: bool = self.DEFAULT_CENTER_X
         self.center_y: bool = self.DEFAULT_CENTER_Y
         self.num_cam_buffers: int = self.DEFAULT_NUM_BUFFERS
         self.serial: str = self.DEFAULT_SERIAL_NUMBER
-        self.user_set: str = self.DEFAULT_USER_SET
+        # self.user_set: str = self.DEFAULT_USER_SET
 
         # Camera capabilities
         self.camera_caps = None
 
         # Image Capture Device
-        self.image_acquirer: ImageAcquirer = None
+        self.image_acquirer: Optional[ImageAcquirer] = None
 
         # Buffer timing
         self.timestamp_offset: int = 0
@@ -606,20 +606,20 @@ class PySpinSrc(GstBase.PushSrc):
     def do_get_property(self, prop: GObject.GParamSpec):
         if prop.name == "auto-exposure":
             return self.auto_exposure
-        elif prop.name == "auto-gain":
-            return self.auto_gain
+        # elif prop.name == "auto-gain":
+        #     return self.auto_gain
         elif prop.name == "exposure":
             return self.exposure_time
-        elif prop.name == "gain":
-            return self.gain
-        elif prop.name == "auto-wb":
-            return self.auto_wb
-        elif prop.name == "wb-red-ratio":
-            return self.wb_red
-        elif prop.name == "h-binning":
-            return self.h_binning
-        elif prop.name == "v-binning":
-            return self.v_binning
+        # elif prop.name == "gain":
+        #     return self.gain
+        # elif prop.name == "auto-wb":
+        #     return self.auto_wb
+        # elif prop.name == "wb-red-ratio":
+        #     return self.wb_red
+        # elif prop.name == "h-binning":
+        #     return self.h_binning
+        # elif prop.name == "v-binning":
+        #     return self.v_binning
         elif prop.name == "offset-x":
             return self.offset_x
         elif prop.name == "offset-y":
@@ -632,8 +632,8 @@ class PySpinSrc(GstBase.PushSrc):
             return self.num_cam_buffers
         elif prop.name == "serial":
             return self.serial
-        elif prop.name == "user-set":
-            return self.user_set
+        # elif prop.name == "user-set":
+        #     return self.user_set
         else:
             raise AttributeError("unknown property %s" % prop.name)
 
@@ -644,28 +644,28 @@ class PySpinSrc(GstBase.PushSrc):
             self.auto_exposure = value
             if self.image_acquirer is not None and self.image_acquirer.is_initialized():
                 self.set_cam_node_val("ExposureAuto", "Continuous" if self.auto_exposure else "Off")
-        elif prop.name == "auto-gain":
-            self.auto_gain = value
-            if self.image_acquirer is not None and self.image_acquirer.is_initialized():
-                self.set_cam_node_val("GainAuto", "Continuous" if self.auto_gain else "Off")
+        # elif prop.name == "auto-gain":
+        #     self.auto_gain = value
+        #     if self.image_acquirer is not None and self.image_acquirer.is_initialized():
+        #         self.set_cam_node_val("GainAuto", "Continuous" if self.auto_gain else "Off")
         elif prop.name == "exposure":
             self.exposure_time = value
             if self.image_acquirer is not None and self.image_acquirer.is_initialized():
                 self.set_cam_node_val("ExposureTime", self.exposure_time)
-        elif prop.name == "gain":
-            self.gain = value
-            if self.image_acquirer is not None and self.image_acquirer.is_initialized():
-                self.set_cam_node_val("Gain", self.gain)
-        elif prop.name == "auto-wb":
-            self.auto_wb = value
-        elif prop.name == "wb-blue-ratio":
-            self.wb_blue = value
-        elif prop.name == "wb-red-ratio":
-            self.wb_red = value
-        elif prop.name == "h-binning":
-            self.h_binning = value
-        elif prop.name == "v-binning":
-            self.v_binning = value
+        # elif prop.name == "gain":
+        #     self.gain = value
+        #     if self.image_acquirer is not None and self.image_acquirer.is_initialized():
+        #         self.set_cam_node_val("Gain", self.gain)
+        # elif prop.name == "auto-wb":
+        #     self.auto_wb = value
+        # elif prop.name == "wb-blue-ratio":
+        #     self.wb_blue = value
+        # elif prop.name == "wb-red-ratio":
+        #     self.wb_red = value
+        # elif prop.name == "h-binning":
+        #     self.h_binning = value
+        # elif prop.name == "v-binning":
+        #     self.v_binning = value
         elif prop.name == "offset-x":
             self.offset_x = value
         elif prop.name == "offset-y":
@@ -678,20 +678,20 @@ class PySpinSrc(GstBase.PushSrc):
             self.num_cam_buffers = value
         elif prop.name == "serial":
             self.serial = value
-        elif prop.name == "user-set":
-            self.user_set = value
+        # elif prop.name == "user-set":
+        #     self.user_set = value
         else:
             raise AttributeError("unknown property %s" % prop.name)
 
     # helper function
-    def get_format_from_genicam(self, genicam_format: str) -> "PixelFormatType":
+    def get_format_from_genicam(self, genicam_format: str) -> Optional[PixelFormatType]:
         return next(
             (f for f in self.SUPPORTED_PIXEL_FORMATS if f.genicam.lower() == genicam_format.lower()),
             None,
         )
 
     # helper function
-    def get_format_from_gst(self, gst_format: str) -> "PixelFormatType":
+    def get_format_from_gst(self, gst_format: str) -> Optional[PixelFormatType]:
         return next(
             (f for f in self.SUPPORTED_PIXEL_FORMATS if f.gst.lower() == gst_format.lower()),
             None,
@@ -699,6 +699,8 @@ class PySpinSrc(GstBase.PushSrc):
 
     # helper function
     def cam_node_available(self, node_name: str) -> bool:
+        if self.image_acquirer is None:
+            return False
         try:
             return self.image_acquirer.node_available(node_name)
         except (ValueError, NotImplementedError) as ex:
@@ -706,7 +708,9 @@ class PySpinSrc(GstBase.PushSrc):
             return False
 
     # helper function
-    def get_cam_node_val(self, node_name: str) -> Any:
+    def get_cam_node_val(self, node_name: str) -> Optional[Any]:
+        if self.image_acquirer is None:
+            return None
         try:
             return self.image_acquirer.get_node_val(node_name)
         except (ValueError, NotImplementedError) as ex:
@@ -715,6 +719,8 @@ class PySpinSrc(GstBase.PushSrc):
 
     # helper function
     def set_cam_node_val(self, node_name: str, value, log_value: bool = True):
+        if self.image_acquirer is None:
+            return
         try:
             self.image_acquirer.set_node_val(node_name, value)
             if log_value:
@@ -728,6 +734,8 @@ class PySpinSrc(GstBase.PushSrc):
 
     # helper function
     def execute_cam_node(self, node_name: str, log_execution: bool = True):
+        if self.image_acquirer is None:
+            return
         try:
             self.image_acquirer.execute_node(node_name)
             if log_execution:
@@ -737,6 +745,8 @@ class PySpinSrc(GstBase.PushSrc):
 
     # helper function
     def get_cam_node_entries(self, node_name: str) -> List[Any]:
+        if self.image_acquirer is None:
+            return []
         try:
             return self.image_acquirer.get_node_entries(node_name)
         except (ValueError, NotImplementedError) as ex:
@@ -744,7 +754,9 @@ class PySpinSrc(GstBase.PushSrc):
             return []
 
     # helper function
-    def get_cam_node_range(self, node_name: str) -> (Any, Any):
+    def get_cam_node_range(self, node_name: str) -> Tuple[Any, Any]:
+        if self.image_acquirer is None:
+            return (None, None)
         try:
             return self.image_acquirer.get_node_range(node_name)
         except (ValueError, NotImplementedError) as ex:
@@ -755,19 +767,19 @@ class PySpinSrc(GstBase.PushSrc):
     def apply_properties_to_cam(self) -> bool:
         Gst.info("Applying properties")
         try:
-            self.set_cam_node_val("UserSetSelector", self.user_set)
-            self.execute_cam_node("UserSetLoad")
+            # self.set_cam_node_val("UserSetSelector", self.user_set)
+            # self.execute_cam_node("UserSetLoad")
 
             self.set_cam_node_val("StreamBufferHandlingMode", "OldestFirst")
             self.set_cam_node_val("StreamBufferCountMode", "Manual")
             self.set_cam_node_val("StreamBufferCountManual", self.num_cam_buffers)
 
             # Configure Camera Properties
-            if self.h_binning > 1:
-                self.set_cam_node_val("BinningHorizontal", self.h_binning)
+            # if self.h_binning > 1:
+            #     self.set_cam_node_val("BinningHorizontal", self.h_binning)
 
-            if self.v_binning > 1:
-                self.set_cam_node_val("BinningVertical", self.v_binning)
+            # if self.v_binning > 1:
+            #     self.set_cam_node_val("BinningVertical", self.v_binning)
 
             if self.exposure_time >= 0:
                 self.set_cam_node_val("ExposureAuto", "Off")
@@ -777,32 +789,32 @@ class PySpinSrc(GstBase.PushSrc):
             else:
                 self.set_cam_node_val("ExposureAuto", "Off")
 
-            if self.gain >= 0:
-                self.set_cam_node_val("GainAuto", "Off")
-                self.set_cam_node_val("Gain", self.gain)
-            elif self.auto_gain:
-                self.set_cam_node_val("GainAuto", "Continuous")
-            else:
-                self.set_cam_node_val("GainAuto", "Off")
+            # if self.gain >= 0:
+            #     self.set_cam_node_val("GainAuto", "Off")
+            #     self.set_cam_node_val("Gain", self.gain)
+            # elif self.auto_gain:
+            #     self.set_cam_node_val("GainAuto", "Continuous")
+            # else:
+            #     self.set_cam_node_val("GainAuto", "Off")
 
-            if self.cam_node_available("BalanceWhiteAuto"):
-                manual_wb = False
-                if self.wb_blue >= 0:
-                    self.set_cam_node_val("BalanceWhiteAuto", "Off")
-                    self.set_cam_node_val("BalanceRatioSelector", "Blue")
-                    self.set_cam_node_val("BalanceRatio", self.wb_blue)
-                    manual_wb = True
+            # if self.cam_node_available("BalanceWhiteAuto"):
+            #     manual_wb = False
+            #     if self.wb_blue >= 0:
+            #         self.set_cam_node_val("BalanceWhiteAuto", "Off")
+            #         self.set_cam_node_val("BalanceRatioSelector", "Blue")
+            #         self.set_cam_node_val("BalanceRatio", self.wb_blue)
+            #         manual_wb = True
 
-                if self.wb_red >= 0:
-                    self.set_cam_node_val("BalanceWhiteAuto", "Off")
-                    self.set_cam_node_val("BalanceRatioSelector", "Red")
-                    self.set_cam_node_val("BalanceRatio", self.wb_red)
-                    manual_wb = True
+            #     if self.wb_red >= 0:
+            #         self.set_cam_node_val("BalanceWhiteAuto", "Off")
+            #         self.set_cam_node_val("BalanceRatioSelector", "Red")
+            #         self.set_cam_node_val("BalanceRatio", self.wb_red)
+            #         manual_wb = True
 
-                if self.auto_wb and not manual_wb:
-                    self.set_cam_node_val("BalanceWhiteAuto", "Continuous")
-                else:
-                    self.set_cam_node_val("BalanceWhiteAuto", "Off")
+            #     if self.auto_wb and not manual_wb:
+            #         self.set_cam_node_val("BalanceWhiteAuto", "Continuous")
+            #     else:
+            #         self.set_cam_node_val("BalanceWhiteAuto", "Off")
 
         except Exception as ex:
             Gst.error(f"Error: {ex}")
@@ -825,6 +837,8 @@ class PySpinSrc(GstBase.PushSrc):
         camera_caps = Gst.Caps.new_empty()
 
         for pixel_format in supported_pixel_formats:
+            if pixel_format is None:
+                continue
             camera_caps.append_structure(
                 Gst.Structure(
                     pixel_format.cap_type,
@@ -844,6 +858,9 @@ class PySpinSrc(GstBase.PushSrc):
         self.set_blocksize(self.info.size if self.info.size > 0 else self.info.width * self.info.height)
 
         Gst.info(f"Blocksize: {self.get_blocksize()} bytes")
+
+        if self.image_acquirer is None:
+            return False
 
         try:
             self.image_acquirer.start_acquisition()
@@ -882,7 +899,8 @@ class PySpinSrc(GstBase.PushSrc):
             structure.fixate_field_string("format", genicam_pixel_format_type.gst)
 
         gst_pixel_format_type = self.get_format_from_gst(structure.get_value("format"))
-        self.set_cam_node_val("PixelFormat", gst_pixel_format_type.genicam)
+        if gst_pixel_format_type is not None:
+            self.set_cam_node_val("PixelFormat", gst_pixel_format_type.genicam)
 
         height = self.get_cam_node_val("Height")
         structure.fixate_field_nearest_int("height", height)
@@ -955,6 +973,8 @@ class PySpinSrc(GstBase.PushSrc):
     # GST function
     def do_stop(self) -> bool:
         Gst.info("Stopping")
+        if self.image_acquirer is None:
+            return True
         try:
             self.image_acquirer.end_acquisition()
             self.image_acquirer = None
@@ -963,7 +983,7 @@ class PySpinSrc(GstBase.PushSrc):
         return True
 
     # GST function
-    def do_get_times(self, buffer: Gst.Buffer) -> (int, int):
+    def do_get_times(self, buffer: Gst.Buffer) -> Tuple[int, int]:
         end = 0
         start = 0
         if self.is_live:
@@ -982,6 +1002,9 @@ class PySpinSrc(GstBase.PushSrc):
     # GST function
     def do_gst_push_src_fill(self, buffer: Gst.Buffer) -> Gst.FlowReturn:
         try:
+            if self.image_acquirer is None:
+                Gst.error(f"Error: missing image acquirer")
+                return Gst.FlowReturn.ERROR
 
             (
                 image_array,
