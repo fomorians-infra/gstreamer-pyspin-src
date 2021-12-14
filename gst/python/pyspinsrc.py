@@ -384,6 +384,7 @@ class PySpinSrc(GstBase.PushSrc):
     DEFAULT_WB_BLUE = -1
     DEFAULT_WB_RED = -1
     DEFAULT_ENABLE_GAMMA = True
+    DEFAULT_GAMMA = 1 / 2.2
     DEFAULT_ENABLE_COLOR_TRANSFORM = False
     DEFAULT_H_BINNING = 1
     DEFAULT_V_BINNING = 1
@@ -467,8 +468,15 @@ class PySpinSrc(GstBase.PushSrc):
         "enable-gamma": (
             bool,
             "enable gamma",
-            "Enable gamma adjustment",
+            "Enable gamma correction",
             DEFAULT_ENABLE_GAMMA,
+            GObject.ParamFlags.READWRITE,
+        ),
+        "gamma": (
+            float,
+            "gamma",
+            "Gamma correction",
+            DEFAULT_GAMMA,
             GObject.ParamFlags.READWRITE,
         ),
         "enable-color-transform": (
@@ -595,6 +603,7 @@ class PySpinSrc(GstBase.PushSrc):
         self.wb_blue: float = self.DEFAULT_WB_BLUE
         self.wb_red: float = self.DEFAULT_WB_RED
         self.enable_gamma: bool = self.DEFAULT_ENABLE_GAMMA
+        self.gamma: float = self.DEFAULT_GAMMA
         self.enable_color_transform: bool = self.DEFAULT_ENABLE_COLOR_TRANSFORM
         self.h_binning: int = self.DEFAULT_H_BINNING
         self.v_binning: int = self.DEFAULT_V_BINNING
@@ -636,6 +645,8 @@ class PySpinSrc(GstBase.PushSrc):
             return self.wb_red
         elif prop.name == "enable-gamma":
             return self.enable_gamma
+        elif prop.name == "gamma":
+            return self.gamma
         elif prop.name == "enable-color-transform":
             return self.enable_color_transform
         elif prop.name == "h-binning":
@@ -686,6 +697,8 @@ class PySpinSrc(GstBase.PushSrc):
             self.wb_red = value
         elif prop.name == "enable-gamma":
             self.enable_gamma = value
+        elif prop.name == "gamma":
+            self.gamma = value
         elif prop.name == "enable-color-transform":
             self.enable_color_transform = value
         elif prop.name == "h-binning":
@@ -844,6 +857,8 @@ class PySpinSrc(GstBase.PushSrc):
 
             if self.cam_node_available("GammaEnable"):
                 self.set_cam_node_val("GammaEnable", self.enable_gamma)
+            if self.enable_gamma and self.cam_node_available("Gamma"):
+                self.set_cam_node_val("Gamma", self.gamma)
             if self.cam_node_available("ColorTransformationEnable"):
                 self.set_cam_node_val("ColorTransformationEnable", self.enable_color_transform)
 
