@@ -476,6 +476,8 @@ class PySpinSrc(GstBase.PushSrc):
             float,
             "gamma",
             "Gamma correction",
+            0.0,
+            10.0,
             DEFAULT_GAMMA,
             GObject.ParamFlags.READWRITE,
         ),
